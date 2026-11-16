@@ -6,6 +6,8 @@ from typing import Annotated
 from database import engine
 
 from models import Post
+import jwt
+from datetime import datetime, timedelta, timezone
 
 password_hash = PasswordHash.recommended()
 
@@ -24,3 +26,11 @@ def get_post_or_404(post_id: int, db: SessionDep):
 
 PostDep = Annotated[Post, Depends(get_post_or_404)]
 
+SECRET_KEY = 'dev-secret'
+ALGORITHM = 'HS256'
+
+def create_access_token(user_id: int):
+  exp = datetime.now(timezone.utc) + timedelta(minutes=30)
+  return jwt.encode({'sub': str(user_id), 'exp': exp}, SECRET_KEY, algorithm=ALGORITHM)
+#토큰을 하나 발행하는 과정. 함수로 표현. 
+#user id 를 넣어야 1번 유저가 만들때는 1번유저 토큰. 

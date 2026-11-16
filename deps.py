@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from typing import Annotated
 from database import engine
 
-from models import Post
+from models import Post, User
 import jwt
 from datetime import datetime, timedelta, timezone
+from fastapi.security import OAuth2PasswordBearer
 
 password_hash = PasswordHash.recommended()
 
@@ -34,3 +35,17 @@ def create_access_token(user_id: int):
   return jwt.encode({'sub': str(user_id), 'exp': exp}, SECRET_KEY, algorithm=ALGORITHM)
 #토큰을 하나 발행하는 과정. 함수로 표현. 
 #user id 를 넣어야 1번 유저가 만들때는 1번유저 토큰. 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login')
+
+def get_current_user(token: Annotated[str, Depends()], db: SessionDep):
+  try:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+  except:
+    raise HTTPException(status_code=401, detail='토큰이 올바르지 않습니다.')
+  #결국 decode를 하면 payload값만 나온다
+  user = db.get(User, int(payload['sub']))
+
+  return user
+
+CurrentUserDep = Annotated[User, Depends(get_current_user)]

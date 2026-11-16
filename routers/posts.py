@@ -33,3 +33,9 @@ def post_update(post: PostDep, data: PostUpdate, db: SessionDep):
   post.content = data.content
   db.commit()
   return post
+
+@router.delete('/{post_id}', status_code=204)
+def post_delete(post: PostDep, db: SessionDep):
+  db.delete(post)
+  db.commit()
+  

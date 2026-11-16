@@ -15,3 +15,6 @@ class PostOut(BaseModel):
 class PostCreate(BaseModel):
     content: str = Field(min_length=1, max_length=500)
     user_ide: int
+
+class PostUpdate(BaseModel):
+   content: str = Field(min_length=1, max_length=500)

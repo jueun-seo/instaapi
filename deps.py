@@ -1,10 +1,8 @@
-from fastapi import Depends
 from fastapi import Depends, HTTPException
 from pwdlib import PasswordHash
 from sqlalchemy.orm import Session
 from typing import Annotated
 from database import engine
-
 from models import Post, User
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -27,24 +25,28 @@ def get_post_or_404(post_id: int, db: SessionDep):
 
 PostDep = Annotated[Post, Depends(get_post_or_404)]
 
+
 SECRET_KEY = 'dev-secret'
 ALGORITHM = 'HS256'
 
 def create_access_token(user_id: int):
   exp = datetime.now(timezone.utc) + timedelta(minutes=30)
   return jwt.encode({'sub': str(user_id), 'exp': exp}, SECRET_KEY, algorithm=ALGORITHM)
-#토큰을 하나 발행하는 과정. 함수로 표현. 
-#user id 를 넣어야 1번 유저가 만들때는 1번유저 토큰. 
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/auth/login')
 
-def get_current_user(token: Annotated[str, Depends()], db: SessionDep):
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: SessionDep):
   try:
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
   except:
     raise HTTPException(status_code=401, detail='토큰이 올바르지 않습니다.')
-  #결국 decode를 하면 payload값만 나온다
+    raise HTTPException(status_code=401, detail='토큰이 올바르지 않습니다.', headers={'WWW-Authenticate': 'Bearer'})
+
   user = db.get(User, int(payload['sub']))
+
+  if user is None:
+    raise HTTPException(status_code=401, detail='없는 사용자입니다.', headers={'WWW-Authenticate': 'Bearer'})
 
   return user
 
